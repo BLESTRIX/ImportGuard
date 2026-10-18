@@ -1,0 +1,6 @@
+product_code,product_name,price,qty,category
+TEA-001,Green tea,4.50,120,Pantry
+=HYPERLINK("evil"),Unsafe SKU,3.00,4,Home
+COF-002,Ground coffee,,20,Pantry
+MUG-003,Ceramic mug,8.001,2.5,Home
+BAD-004,,NaN,-4,Other

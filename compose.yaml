@@ -1,0 +1,110 @@
+name: importguard
+x-app: &app
+  image: importguard-app:local
+  build: .
+  environment: &environment
+    APP_ENV: ${APP_ENV:-development}
+    DATABASE_URL: postgresql+psycopg://importguard:${POSTGRES_PASSWORD:-local-password}@postgres:5432/importguard
+    REDIS_URL: redis://redis:6379/0
+    S3_ENDPOINT: http://minio:9000
+    S3_ACCESS_KEY: ${S3_ACCESS_KEY:-importguard-local}
+    S3_SECRET_KEY: ${S3_SECRET_KEY:-local-storage-password}
+    S3_BUCKET: ${S3_BUCKET:-importguard}
+    COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+    MAX_ROWS: ${MAX_ROWS:-50000}
+    MAX_COLUMNS: ${MAX_COLUMNS:-50}
+    BATCH_SIZE: ${BATCH_SIZE:-500}
+    LEASE_SECONDS: ${LEASE_SECONDS:-120}
+    ENABLE_FAILURE_INJECTION: ${ENABLE_FAILURE_INJECTION:-false}
+    DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+    bucket-init:
+      condition: service_completed_successfully
+  restart: unless-stopped
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: importguard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-password}
+      POSTGRES_DB: importguard
+    ports: ["127.0.0.1:5439:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U importguard -d importguard"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:6389:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  minio:
+    build:
+      context: .
+      dockerfile: Dockerfile.minio
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-importguard-local}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-local-storage-password}
+    ports: ["127.0.0.1:9009:9000", "127.0.0.1:9010:9001"]
+    volumes: ["minio-data:/data"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  bucket-init:
+    image: importguard-app:local
+    build: .
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment: *environment
+    command: ["python", "-m", "scripts.init_storage"]
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  web:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/ready')"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+  worker:
+    <<: *app
+    command: ["celery", "-A", "app.tasks.celery_app:celery", "worker", "--loglevel=INFO", "--concurrency=2"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.tasks.celery_app:celery inspect ping --timeout 3 | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  beat:
+    <<: *app
+    command: ["celery", "-A", "app.tasks.celery_app:celery", "beat", "--loglevel=INFO", "--schedule=/tmp/importguard-beat"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,time; assert time.time()-os.path.getmtime('/tmp/importguard-beat') < 600"]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

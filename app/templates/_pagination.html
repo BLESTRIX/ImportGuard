@@ -1,0 +1,3 @@
+{% if result.total > result.page_size %}<nav class="pagination-bar" aria-label="Pagination"><span>{{ result.total }} results · Page {{ result.page }} of {{ ((result.total + result.page_size - 1) // result.page_size) }}</span><div>
+{% if result.page > 1 %}<a class="btn btn-sm btn-outline-secondary" href="{{ request.url.include_query_params(page_number=result.page-1) }}">Previous</a>{% endif %}
+{% if result.page * result.page_size < result.total %}<a class="btn btn-sm btn-outline-secondary" href="{{ request.url.include_query_params(page_number=result.page+1) }}">Next</a>{% endif %}</div></nav>{% endif %}

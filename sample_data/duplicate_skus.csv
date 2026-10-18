@@ -1,0 +1,4 @@
+product_code,product_name,price,qty,category
+tea-001,Green tea,4.50,10,Pantry
+COF-002,Ground coffee,12.99,48,Pantry
+ TEA-001 ,Duplicate normalized code,4.50,20,Pantry

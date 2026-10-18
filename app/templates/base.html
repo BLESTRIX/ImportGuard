@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ImportGuard{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false}'>
+  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body hx-boost="true">
+<a class="visually-hidden-focusable" href="#main">Skip to content</a>
+<header class="topbar"><a href="/" class="brand"><span class="brand-icon">IG</span> ImportGuard</a>
+{% if user %}<span class="org-label">{{ user.organization_name }} <span class="role">{{ user.role }}</span></span>
+<form action="/logout" method="post"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-sm btn-outline-light">Sign out</button></form>{% endif %}</header>
+<div class="app-shell">
+{% if user %}<nav class="sidebar" aria-label="Main navigation">
+<span class="nav-caption">WORKSPACE</span>
+{% for href,label in [('/', 'Overview'),('/inventory','Inventory'),('/imports','Import history'),('/templates','Mapping templates')] %}
+<a href="{{ href }}" class="{% if request.url.path == href %}active{% endif %}">{{ label }}</a>{% endfor %}
+{% if user.role == 'ADMIN' %}<a href="/audit">Audit history</a><a href="/settings">Organization</a>{% endif %}
+<div class="sidebar-note"><strong>Review. Approve. Apply.</strong><p>Your inventory changes only after an administrator approves a valid import.</p></div>
+</nav>{% endif %}
+<main id="main" class="main-content {% if not user %}auth-content{% endif %}">
+<div id="request-error" class="alert alert-danger" role="alert" hidden></div>
+{% block content %}{% endblock %}
+<div class="htmx-indicator" id="loading" role="status">Working…</div>
+</main></div>
+<footer>ImportGuard · Safe supplier imports · All timestamps in UTC</footer>
+</body></html>

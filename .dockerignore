@@ -1,0 +1,11 @@
+.venv
+.git
+.env
+.uv-cache
+.artifacts
+__pycache__
+.pytest_cache
+.ruff_cache
+htmlcov
+.coverage
+coverage.xml

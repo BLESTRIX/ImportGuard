@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}<span class="eyebrow">NEW IMPORT · STEP 1 OF 3</span><h1>Bring in your supplier CSV.</h1><p class="text-muted">Upload, map columns, then review every change before approval.</p>
+<form class="panel form-panel" action="/imports/upload" method="post" enctype="multipart/form-data" hx-post="/imports/upload" hx-encoding="multipart/form-data" hx-indicator="#loading">
+<input type="hidden" name="csrf_token" value="{{ csrf }}"><label class="form-label" for="name">Import name</label><input class="form-control mb-4" id="name" name="name" required maxlength="200" placeholder="October supplier delivery">
+<label class="upload-zone" for="file"><strong>Choose your CSV file</strong><span>UTF-8 · Comma separated · One header row</span><input class="form-control mt-3" type="file" id="file" name="file" accept=".csv,text/csv" required></label>
+<p class="small text-muted mt-3">Maximum {{ '%.1f'|format(limit / 1048576) }} MiB. Unsupported encodings and formats are rejected. Your source file stays private.</p><button class="btn btn-primary">Upload and map columns →</button></form>{% endblock %}

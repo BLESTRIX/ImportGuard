@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<section class="panel form-panel"><span class="eyebrow">{{ code|replace('_',' ')|upper }}</span><h1>We couldn't complete that request.</h1><p>{{ message }}</p><p class="small text-muted">Request ID: {{ request.state.request_id }}</p><a class="btn btn-primary" href="/">Back to overview</a></section>{% endblock %}
